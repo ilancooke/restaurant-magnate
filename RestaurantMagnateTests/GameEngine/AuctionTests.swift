@@ -54,13 +54,13 @@ struct AuctionTests {
         _ = try engine.perform(.rollDice, by: mayaID)
         _ = try engine.perform(.declinePurchase(propertyID), by: mayaID)
         _ = try engine.perform(
-            .placeAuctionBid(propertyID: propertyID, amount: Money(1)),
+            .placeAuctionBid(propertyID: propertyID, amount: Money(10)),
             by: mayaID
         )
         _ = try engine.perform(.withdrawFromAuction(propertyID), by: theoID)
 
         #expect(engine.state.propertyStates[propertyID]?.ownerID == mayaID)
-        #expect(engine.state.players[0].cash == Money(1_699))
+        #expect(engine.state.players[0].cash == Money(1_690))
     }
 
     @Test
@@ -99,6 +99,11 @@ struct AuctionTests {
 
         _ = try engine.perform(.rollDice, by: mayaID)
         _ = try engine.perform(.declinePurchase(propertyID), by: mayaID)
+
+        #expect(engine.legalActions(for: mayaID).contains(
+            .placeAuctionBid(propertyID: propertyID, minimumBid: Money(10))
+        ))
+
         _ = try engine.perform(
             .placeAuctionBid(propertyID: propertyID, amount: Money(25)),
             by: mayaID

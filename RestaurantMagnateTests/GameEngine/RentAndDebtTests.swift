@@ -126,6 +126,6 @@ struct RentAndDebtTests {
         #expect(engine.state.debt == expectedDebt)
         #expect(engine.state.phase == .resolvingDebt(expectedDebt))
         #expect(events.contains(.debtRequired(expectedDebt)))
-        #expect(engine.legalActions(for: mayaID).isEmpty)
+        #expect(engine.legalActions(for: mayaID) == [.declareBankruptcy])
     }
 }

@@ -80,6 +80,9 @@ struct GameView: View {
                     Text("Price $\(property.purchasePrice.amount)")
                     if let owner = session.ownerName(for: property.id) {
                         Text("Owned by \(owner)")
+                        if session.state.propertyStates[property.id]?.isMortgaged == true {
+                            Label("Mortgaged", systemImage: "lock.fill")
+                        }
                     } else {
                         Text("Bank owned")
                     }
@@ -136,6 +139,11 @@ private struct PlayerSummaryView: View {
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(RestaurantTheme.secondaryInk)
                     .lineLimit(1)
+                if player.status == .bankrupt {
+                    Text("Bankrupt")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RestaurantTheme.tomato)
+                }
             }
             Spacer(minLength: 0)
         }
@@ -148,11 +156,13 @@ private struct PlayerSummaryView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(player.name), $\(player.cash.amount), \(propertyCount) locations")
+        .opacity(player.status == .bankrupt ? 0.58 : 1)
     }
 }
 
 private struct TurnControlPanel: View {
     @Bindable var session: GameSession
+    @State private var showAssetManagement = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -176,6 +186,18 @@ private struct TurnControlPanel: View {
 
             controls
 
+            if showsAssetManagementButton {
+                Button {
+                    showAssetManagement = true
+                } label: {
+                    Label("Manage Locations", systemImage: "building.2.crop.circle")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(RestaurantTheme.ink)
+                .accessibilityIdentifier("manage-locations")
+            }
+
             if let error = session.errorMessage {
                 Text(error)
                     .font(.caption)
@@ -190,6 +212,9 @@ private struct TurnControlPanel: View {
                 .stroke(RestaurantTheme.line, lineWidth: 1)
         }
         .accessibilityIdentifier("turn-controls")
+        .sheet(isPresented: $showAssetManagement) {
+            AssetManagementView(session: session)
+        }
     }
 
     @ViewBuilder
@@ -236,11 +261,44 @@ private struct TurnControlPanel: View {
             }
 
         case let .resolvingDebt(debt):
-            Label(
-                "Payment due: $\(debt.amount.amount)",
-                systemImage: "exclamationmark.triangle.fill"
-            )
-            .foregroundStyle(RestaurantTheme.tomato)
+            VStack(alignment: .leading, spacing: 12) {
+                Label(
+                    "Payment due: $\(debt.amount.amount)",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .foregroundStyle(RestaurantTheme.tomato)
+                AssetManagementRows(session: session)
+                bankruptcyButton
+            }
+
+        case .resolvingMortgageTransfer:
+            if let property = session.transferredMortgageProperty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(property.name)
+                        .font(.subheadline.weight(.semibold))
+
+                    if let cost = session.transferredUnmortgageCost(for: property.id) {
+                        actionButton(
+                            "Pay $\(cost.amount) & Unmortgage",
+                            icon: "lock.open.fill",
+                            id: "unmortgage-transfer"
+                        ) {
+                            session.unmortgageTransferredProperty(property.id)
+                        }
+                    }
+                    if let interest = session.transferredMortgageInterest(for: property.id) {
+                        secondaryButton(
+                            "Pay $\(interest.amount) Interest",
+                            icon: "lock.fill",
+                            id: "keep-transfer-mortgage"
+                        ) {
+                            session.keepTransferredMortgage(property.id)
+                        }
+                    }
+                    AssetManagementRows(session: session)
+                    bankruptcyButton
+                }
+            }
 
         case let .gameOver(winnerID):
             Label("\(session.playerName(winnerID)) wins", systemImage: "trophy.fill")
@@ -260,8 +318,40 @@ private struct TurnControlPanel: View {
         case .awaitingAuction: "Location Auction"
         case .awaitingEndTurn: "Turn Complete"
         case .resolvingDebt: "Outstanding Payment"
+        case .resolvingMortgageTransfer: "Transferred Mortgage"
         case .gameOver: "Final Result"
         }
+    }
+
+    private var showsAssetManagementButton: Bool {
+        guard !session.ownedProperties.isEmpty else {
+            return false
+        }
+        switch session.state.phase {
+        case .awaitingRoll, .awaitingPurchase, .awaitingEndTurn:
+            return session.legalActions.contains { action in
+                switch action {
+                case .mortgageProperty, .unmortgageProperty:
+                    return true
+                default:
+                    return false
+                }
+            }
+        default:
+            return false
+        }
+    }
+
+    private var bankruptcyButton: some View {
+        Button(role: .destructive) {
+            session.declareBankruptcy()
+        } label: {
+            Label("Declare Bankruptcy", systemImage: "exclamationmark.octagon")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .disabled(!session.canDeclareBankruptcy)
+        .accessibilityIdentifier("declare-bankruptcy")
     }
 
     private func actionButton(
@@ -298,6 +388,74 @@ private struct TurnControlPanel: View {
                 }
         }
         .accessibilityIdentifier(id)
+    }
+}
+
+private struct AssetManagementView: View {
+    @Bindable var session: GameSession
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if session.ownedProperties.isEmpty {
+                    ContentUnavailableView(
+                        "No Locations",
+                        systemImage: "building.2",
+                        description: Text("Purchased locations appear here.")
+                    )
+                } else {
+                    AssetManagementRows(session: session)
+                }
+            }
+            .navigationTitle("Manage Locations")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+private struct AssetManagementRows: View {
+    @Bindable var session: GameSession
+
+    var body: some View {
+        ForEach(session.ownedProperties, id: \.id) { property in
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(property.name)
+                        .font(.subheadline.weight(.semibold))
+                    Text(status(for: property))
+                        .font(.caption)
+                        .foregroundStyle(RestaurantTheme.secondaryInk)
+                }
+                Spacer(minLength: 8)
+                if let proceeds = session.mortgageProceeds(for: property.id) {
+                    Button("+$\(proceeds.amount)") {
+                        session.mortgage(property.id)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("Mortgage \(property.name) for $\(proceeds.amount)")
+                } else if let cost = session.unmortgageCost(for: property.id) {
+                    Button("Pay $\(cost.amount)") {
+                        session.unmortgage(property.id)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("Unmortgage \(property.name) for $\(cost.amount)")
+                }
+            }
+        }
+    }
+
+    private func status(for property: PropertyDefinition) -> String {
+        if session.state.propertyStates[property.id]?.isMortgaged == true {
+            return "Mortgaged · value $\(property.mortgageValue.amount)"
+        }
+        return "Mortgage value $\(property.mortgageValue.amount)"
     }
 }
 

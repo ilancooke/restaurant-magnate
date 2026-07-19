@@ -11,6 +11,9 @@ struct GameState: Sendable {
     var openingRolls: [PlayerID: DiceRoll]
     var auction: AuctionState?
     var debt: Debt?
+    var debtContinuation: DebtContinuation?
+    var mortgageTransfer: MortgageTransferResolution?
+    var bankruptcyAuction: BankruptcyAuctionResolution?
     var consecutiveDoubles: Int
 
     var activePlayers: [Player] {
@@ -81,6 +84,9 @@ enum GameSetupFactory {
             openingRolls: [:],
             auction: nil,
             debt: nil,
+            debtContinuation: nil,
+            mortgageTransfer: nil,
+            bankruptcyAuction: nil,
             consecutiveDoubles: 0
         )
     }

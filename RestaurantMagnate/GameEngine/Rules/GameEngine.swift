@@ -23,7 +23,8 @@ struct GameEngine<Roller: DiceRolling> {
     }
 
     func legalActions(for playerID: PlayerID) -> [LegalPlayerAction] {
-        guard playerIndex(for: playerID) != nil else {
+        guard let playerIndex = playerIndex(for: playerID),
+              state.players[playerIndex].status == .active else {
             return []
         }
 
@@ -35,15 +36,12 @@ struct GameEngine<Roller: DiceRolling> {
             guard currentPlayerID == playerID else {
                 return []
             }
-            guard let playerIndex = playerIndex(for: playerID),
-                  state.players[playerIndex].detention != nil else {
-                return [.rollDice]
-            }
             var actions: [LegalPlayerAction] = [.rollDice]
-            if playerCash(playerID) >= Self.detentionFee {
+            if state.players[playerIndex].detention != nil,
+               playerCash(playerID) >= Self.detentionFee {
                 actions.append(.payDetentionFee(amount: Self.detentionFee))
             }
-            return actions
+            return actions + assetManagementActions(for: playerID, allowsUnmortgage: true)
 
         case let .awaitingPurchase(propertyID):
             guard currentPlayerID == playerID,
@@ -54,7 +52,7 @@ struct GameEngine<Roller: DiceRolling> {
             if playerCash(playerID) >= property.purchasePrice {
                 actions.insert(.buyProperty(propertyID), at: 0)
             }
-            return actions
+            return actions + assetManagementActions(for: playerID, allowsUnmortgage: true)
 
         case let .awaitingAuction(propertyID):
             guard let auction = state.auction,
@@ -62,7 +60,7 @@ struct GameEngine<Roller: DiceRolling> {
                   auction.currentBidderID == playerID else {
                 return []
             }
-            let minimumBid = Money((auction.highBid?.amount.amount ?? 0) + 1)
+            let minimumBid = auctionMinimumBid(auction)
             var actions: [LegalPlayerAction] = [.withdrawFromAuction(propertyID)]
             if playerCash(playerID) >= minimumBid {
                 actions.insert(
@@ -70,12 +68,68 @@ struct GameEngine<Roller: DiceRolling> {
                     at: 0
                 )
             }
-            return actions
+            return actions + assetManagementActions(for: playerID, allowsUnmortgage: false)
 
         case .awaitingEndTurn:
-            return currentPlayerID == playerID ? [.endTurn] : []
+            guard currentPlayerID == playerID else {
+                return []
+            }
+            return [.endTurn] + assetManagementActions(
+                for: playerID,
+                allowsUnmortgage: true
+            )
 
-        case .resolvingLanding, .resolvingDebt, .gameOver:
+        case let .resolvingDebt(debt):
+            guard debt.debtorID == playerID else {
+                return []
+            }
+            let mortgageActions = assetManagementActions(
+                for: playerID,
+                allowsUnmortgage: false
+            )
+            return mortgageActions.isEmpty ? [.declareBankruptcy] : mortgageActions
+
+        case let .resolvingMortgageTransfer(resolution):
+            guard resolution.recipientID == playerID,
+                  let propertyID = resolution.remainingPropertyIDs.first,
+                  let property = property(for: propertyID) else {
+                return []
+            }
+            var actions = assetManagementActions(for: playerID, allowsUnmortgage: false)
+            let interest = mortgageInterest(for: property)
+            let unmortgageCost = self.unmortgageCost(for: property)
+            if playerCash(playerID) >= interest {
+                actions.append(.keepTransferredMortgage(
+                    propertyID: propertyID,
+                    interest: interest
+                ))
+            }
+            if playerCash(playerID) >= unmortgageCost {
+                actions.append(.unmortgageTransferredProperty(
+                    propertyID: propertyID,
+                    cost: unmortgageCost
+                ))
+            }
+            let hasPaymentChoice = actions.contains { action in
+                switch action {
+                case .keepTransferredMortgage, .unmortgageTransferredProperty:
+                    return true
+                default:
+                    return false
+                }
+            }
+            let hasMortgageOption = actions.contains { action in
+                if case .mortgageProperty = action {
+                    return true
+                }
+                return false
+            }
+            if !hasPaymentChoice && !hasMortgageOption {
+                actions.append(.declareBankruptcy)
+            }
+            return actions
+
+        case .resolvingLanding, .gameOver:
             return []
         }
     }
@@ -83,6 +137,53 @@ struct GameEngine<Roller: DiceRolling> {
     mutating func perform(_ action: PlayerAction, by playerID: PlayerID) throws -> [GameEvent] {
         guard playerIndex(for: playerID) != nil else {
             throw GameEngineError.unknownPlayer(playerID)
+        }
+
+        switch action {
+        case let .mortgageProperty(propertyID):
+            guard legalActions(for: playerID).contains(where: { legalAction in
+                if case let .mortgageProperty(legalPropertyID, _) = legalAction {
+                    return legalPropertyID == propertyID
+                }
+                return false
+            }) else {
+                throw GameEngineError.illegalAction(action, phase: state.phase)
+            }
+            return try mortgage(propertyID: propertyID, by: playerID)
+
+        case let .unmortgageProperty(propertyID):
+            guard legalActions(for: playerID).contains(where: { legalAction in
+                if case let .unmortgageProperty(legalPropertyID, _) = legalAction {
+                    return legalPropertyID == propertyID
+                }
+                return false
+            }) else {
+                throw GameEngineError.illegalAction(action, phase: state.phase)
+            }
+            return try unmortgage(propertyID: propertyID, by: playerID)
+
+        case let .keepTransferredMortgage(propertyID):
+            return try resolveTransferredMortgage(
+                propertyID: propertyID,
+                by: playerID,
+                shouldUnmortgage: false
+            )
+
+        case let .unmortgageTransferredProperty(propertyID):
+            return try resolveTransferredMortgage(
+                propertyID: propertyID,
+                by: playerID,
+                shouldUnmortgage: true
+            )
+
+        case .declareBankruptcy:
+            guard legalActions(for: playerID).contains(.declareBankruptcy) else {
+                throw GameEngineError.illegalAction(action, phase: state.phase)
+            }
+            return try declareBankruptcy(by: playerID)
+
+        default:
+            break
         }
 
         switch state.phase {
@@ -144,7 +245,7 @@ struct GameEngine<Roller: DiceRolling> {
             }
             return try endTurn(for: playerID)
 
-        case .resolvingLanding, .resolvingDebt, .gameOver:
+        case .resolvingLanding, .resolvingDebt, .resolvingMortgageTransfer, .gameOver:
             throw GameEngineError.illegalAction(action, phase: state.phase)
         }
     }
@@ -414,7 +515,10 @@ private extension GameEngine {
         ]
     }
 
-    mutating func beginAuction(propertyID: PropertyID) throws -> [GameEvent] {
+    mutating func beginAuction(
+        propertyID: PropertyID,
+        purpose: AuctionPurpose = .declinedPurchase
+    ) throws -> [GameEvent] {
         guard property(for: propertyID) != nil else {
             throw GameEngineError.propertyNotFound(propertyID)
         }
@@ -432,6 +536,7 @@ private extension GameEngine {
         }
         state.auction = AuctionState(
             propertyID: propertyID,
+            purpose: purpose,
             bidderOrder: orderedPlayers,
             remainingBidderIDs: orderedPlayers,
             highBid: nil,
@@ -450,7 +555,7 @@ private extension GameEngine {
               auction.propertyID == propertyID else {
             throw GameEngineError.invalidState
         }
-        let minimumBid = Money((auction.highBid?.amount.amount ?? 0) + 1)
+        let minimumBid = auctionMinimumBid(auction)
         guard amount >= minimumBid else {
             throw GameEngineError.invalidAuctionBid(minimum: minimumBid)
         }
@@ -497,8 +602,12 @@ private extension GameEngine {
         }
 
         state.auction = nil
-        state.phase = phaseAfterLanding()
         events.append(.auctionEndedWithoutSale(propertyID: propertyID))
+        if auction.purpose == .bankruptcy {
+            events.append(contentsOf: try continueBankruptcyAuctions())
+        } else {
+            state.phase = phaseAfterLanding()
+        }
         return events
     }
 
@@ -530,11 +639,16 @@ private extension GameEngine {
         )
         state.propertyStates[auction.propertyID]?.ownerID = winningBid.bidderID
         state.auction = nil
-        state.phase = phaseAfterLanding()
-        return [
+        var events: [GameEvent] = [
             .moneyTransferred(transaction),
             .auctionWon(propertyID: auction.propertyID, bid: winningBid)
         ]
+        if auction.purpose == .bankruptcy {
+            events.append(contentsOf: try continueBankruptcyAuctions())
+        } else {
+            state.phase = phaseAfterLanding()
+        }
+        return events
     }
 
     mutating func chargeOrCreateDebt(
@@ -553,6 +667,7 @@ private extension GameEngine {
                 reason: reason
             )
             state.debt = debt
+            state.debtContinuation = .finishLanding(allowsExtraRoll: allowsExtraRoll)
             state.phase = .resolvingDebt(debt)
             return [.debtRequired(debt)]
         }
@@ -607,6 +722,9 @@ private extension GameEngine {
         state.latestRoll = nil
         state.auction = nil
         state.debt = nil
+        state.debtContinuation = nil
+        state.mortgageTransfer = nil
+        state.bankruptcyAuction = nil
         state.consecutiveDoubles = 0
         state.phase = .awaitingRoll
         return [.turnEnded(playerID: playerID, nextPlayerID: nextPlayerID)]
@@ -680,6 +798,10 @@ private extension GameEngine {
                 reason: .detentionFee
             )
             state.debt = debt
+            state.debtContinuation = .moveAfterDetentionFee(
+                playerID: playerID,
+                roll: roll
+            )
             state.phase = .resolvingDebt(debt)
             return [
                 .diceRolled(playerID: playerID, roll: roll),
@@ -711,5 +833,431 @@ private extension GameEngine {
         )
         events.append(contentsOf: movementEvents.dropFirst())
         return events
+    }
+
+    func auctionMinimumBid(_ auction: AuctionState) -> Money {
+        guard let highBid = auction.highBid else {
+            return Money(10)
+        }
+        return Money(highBid.amount.amount + 1)
+    }
+
+    func mortgageInterest(for property: PropertyDefinition) -> Money {
+        Money((property.mortgageValue.amount + 9) / 10)
+    }
+
+    func unmortgageCost(for property: PropertyDefinition) -> Money {
+        Money(property.mortgageValue.amount + mortgageInterest(for: property).amount)
+    }
+
+    func assetManagementActions(
+        for playerID: PlayerID,
+        allowsUnmortgage: Bool
+    ) -> [LegalPlayerAction] {
+        state.board.properties.compactMap { property in
+            guard let propertyState = state.propertyStates[property.id],
+                  propertyState.ownerID == playerID else {
+                return nil
+            }
+            if canMortgage(property, propertyState: propertyState) {
+                return .mortgageProperty(
+                    propertyID: property.id,
+                    proceeds: property.mortgageValue
+                )
+            }
+            if allowsUnmortgage, propertyState.isMortgaged {
+                let cost = unmortgageCost(for: property)
+                if playerCash(playerID) >= cost {
+                    return .unmortgageProperty(propertyID: property.id, cost: cost)
+                }
+            }
+            return nil
+        }
+    }
+
+    func canMortgage(
+        _ property: PropertyDefinition,
+        propertyState: PropertyState
+    ) -> Bool {
+        guard !propertyState.isMortgaged, propertyState.upgradeLevel == 0 else {
+            return false
+        }
+        guard case let .restaurant(group, _) = property.rentRule else {
+            return true
+        }
+        return !state.board.properties.contains { candidate in
+            guard case let .restaurant(candidateGroup, _) = candidate.rentRule,
+                  candidateGroup == group else {
+                return false
+            }
+            return (state.propertyStates[candidate.id]?.upgradeLevel ?? 0) > 0
+        }
+    }
+
+    mutating func mortgage(
+        propertyID: PropertyID,
+        by playerID: PlayerID
+    ) throws -> [GameEvent] {
+        guard let property = property(for: propertyID),
+              let propertyState = state.propertyStates[propertyID],
+              propertyState.ownerID == playerID,
+              canMortgage(property, propertyState: propertyState) else {
+            throw GameEngineError.propertyUnavailable(propertyID)
+        }
+
+        state.propertyStates[propertyID]?.isMortgaged = true
+        let transaction = try transfer(
+            property.mortgageValue,
+            from: .bank,
+            to: .player(playerID),
+            reason: .mortgage(propertyID)
+        )
+        var events: [GameEvent] = [
+            .moneyTransferred(transaction),
+            .propertyMortgaged(
+                playerID: playerID,
+                propertyID: propertyID,
+                proceeds: property.mortgageValue
+            )
+        ]
+
+        if let debt = state.debt,
+           debt.debtorID == playerID,
+           playerCash(playerID) >= debt.amount {
+            events.append(contentsOf: try settleDebt(debt))
+        }
+        return events
+    }
+
+    mutating func unmortgage(
+        propertyID: PropertyID,
+        by playerID: PlayerID
+    ) throws -> [GameEvent] {
+        guard let property = property(for: propertyID),
+              state.propertyStates[propertyID]?.ownerID == playerID,
+              state.propertyStates[propertyID]?.isMortgaged == true else {
+            throw GameEngineError.propertyUnavailable(propertyID)
+        }
+        let cost = unmortgageCost(for: property)
+        let transaction = try transfer(
+            cost,
+            from: .player(playerID),
+            to: .bank,
+            reason: .mortgage(propertyID)
+        )
+        state.propertyStates[propertyID]?.isMortgaged = false
+        return [
+            .moneyTransferred(transaction),
+            .propertyUnmortgaged(
+                playerID: playerID,
+                propertyID: propertyID,
+                cost: cost
+            )
+        ]
+    }
+
+    mutating func settleDebt(_ debt: Debt) throws -> [GameEvent] {
+        let transaction = try transfer(
+            debt.amount,
+            from: .player(debt.debtorID),
+            to: debt.creditor,
+            reason: debt.reason
+        )
+        let continuation = state.debtContinuation
+        state.debt = nil
+        state.debtContinuation = nil
+        var events: [GameEvent] = [
+            .moneyTransferred(transaction),
+            .debtPaid(debt)
+        ]
+
+        switch continuation {
+        case let .finishLanding(allowsExtraRoll):
+            state.phase = phaseAfterLanding(allowsExtraRoll: allowsExtraRoll)
+
+        case let .moveAfterDetentionFee(playerID, roll):
+            guard let playerIndex = playerIndex(for: playerID) else {
+                throw GameEngineError.unknownPlayer(playerID)
+            }
+            state.players[playerIndex].detention = nil
+            state.consecutiveDoubles = 0
+            events.append(.detentionFeePaid(playerID: playerID, amount: debt.amount))
+            events.append(.releasedFromDetention(playerID: playerID))
+            let movementEvents = try moveAndResolve(
+                playerID: playerID,
+                playerIndex: playerIndex,
+                roll: roll,
+                allowsExtraRoll: false
+            )
+            events.append(contentsOf: movementEvents.dropFirst())
+
+        case nil:
+            throw GameEngineError.invalidState
+        }
+        return events
+    }
+
+    mutating func resolveTransferredMortgage(
+        propertyID: PropertyID,
+        by playerID: PlayerID,
+        shouldUnmortgage: Bool
+    ) throws -> [GameEvent] {
+        guard var resolution = state.mortgageTransfer,
+              resolution.recipientID == playerID,
+              resolution.remainingPropertyIDs.first == propertyID,
+              let property = property(for: propertyID),
+              state.propertyStates[propertyID]?.ownerID == playerID,
+              state.propertyStates[propertyID]?.isMortgaged == true else {
+            throw GameEngineError.illegalAction(
+                shouldUnmortgage
+                    ? .unmortgageTransferredProperty(propertyID)
+                    : .keepTransferredMortgage(propertyID),
+                phase: state.phase
+            )
+        }
+
+        let cost = shouldUnmortgage
+            ? unmortgageCost(for: property)
+            : mortgageInterest(for: property)
+        guard playerCash(playerID) >= cost else {
+            throw GameEngineError.insufficientFunds(playerID: playerID, required: cost)
+        }
+        let transaction = try transfer(
+            cost,
+            from: .player(playerID),
+            to: .bank,
+            reason: shouldUnmortgage ? .mortgage(propertyID) : .mortgageInterest(propertyID)
+        )
+        if shouldUnmortgage {
+            state.propertyStates[propertyID]?.isMortgaged = false
+        }
+        resolution.remainingPropertyIDs.removeFirst()
+        state.mortgageTransfer = resolution
+
+        var events: [GameEvent] = [.moneyTransferred(transaction)]
+        if shouldUnmortgage {
+            events.append(.propertyUnmortgaged(
+                playerID: playerID,
+                propertyID: propertyID,
+                cost: cost
+            ))
+        } else {
+            events.append(.transferredMortgageKept(
+                playerID: playerID,
+                propertyID: propertyID,
+                interest: cost
+            ))
+        }
+
+        if resolution.remainingPropertyIDs.isEmpty {
+            state.mortgageTransfer = nil
+            events.append(contentsOf: try finishElimination(
+                eliminatedPlayerID: resolution.eliminatedPlayerID
+            ))
+        } else {
+            state.phase = .resolvingMortgageTransfer(resolution)
+        }
+        return events
+    }
+
+    mutating func declareBankruptcy(by playerID: PlayerID) throws -> [GameEvent] {
+        let creditor: TransactionAccount
+        switch state.phase {
+        case let .resolvingDebt(debt) where debt.debtorID == playerID:
+            creditor = debt.creditor
+        case let .resolvingMortgageTransfer(resolution)
+            where resolution.recipientID == playerID:
+            creditor = .bank
+        default:
+            throw GameEngineError.illegalAction(.declareBankruptcy, phase: state.phase)
+        }
+
+        var events: [GameEvent] = [
+            .bankruptcyDeclared(playerID: playerID, creditor: creditor)
+        ]
+        switch creditor {
+        case let .player(creditorID):
+            events.append(contentsOf: try bankrupt(
+                playerID,
+                toPlayer: creditorID
+            ))
+        case .bank:
+            events.append(contentsOf: try bankruptToBank(playerID))
+        }
+        return events
+    }
+
+    mutating func bankrupt(
+        _ debtorID: PlayerID,
+        toPlayer creditorID: PlayerID
+    ) throws -> [GameEvent] {
+        guard let debtorIndex = playerIndex(for: debtorID),
+              let creditorIndex = playerIndex(for: creditorID),
+              state.players[creditorIndex].status == .active else {
+            throw GameEngineError.invalidState
+        }
+
+        var events: [GameEvent] = []
+        let remainingCash = state.players[debtorIndex].cash
+        if remainingCash.amount > 0 {
+            let transaction = try transfer(
+                remainingCash,
+                from: .player(debtorID),
+                to: .player(creditorID),
+                reason: state.debt?.reason ?? .tax
+            )
+            events.append(.moneyTransferred(transaction))
+        }
+
+        let ownedPropertyIDs = ownedPropertyIDs(for: debtorID)
+        for propertyID in ownedPropertyIDs {
+            state.propertyStates[propertyID]?.ownerID = creditorID
+            events.append(.propertyTransferred(
+                propertyID: propertyID,
+                from: debtorID,
+                to: creditorID
+            ))
+        }
+
+        eliminatePlayer(at: debtorIndex)
+        state.debt = nil
+        state.debtContinuation = nil
+        events.append(.playerEliminated(debtorID))
+
+        if state.activePlayers.count == 1 {
+            events.append(contentsOf: try finishElimination(eliminatedPlayerID: debtorID))
+            return events
+        }
+
+        let mortgagedPropertyIDs = ownedPropertyIDs.filter {
+            state.propertyStates[$0]?.isMortgaged == true
+        }
+        if mortgagedPropertyIDs.isEmpty {
+            events.append(contentsOf: try finishElimination(eliminatedPlayerID: debtorID))
+        } else {
+            let resolution = MortgageTransferResolution(
+                recipientID: creditorID,
+                eliminatedPlayerID: debtorID,
+                remainingPropertyIDs: mortgagedPropertyIDs
+            )
+            state.mortgageTransfer = resolution
+            state.phase = .resolvingMortgageTransfer(resolution)
+        }
+        return events
+    }
+
+    mutating func bankruptToBank(_ playerID: PlayerID) throws -> [GameEvent] {
+        guard let playerIndex = playerIndex(for: playerID) else {
+            throw GameEngineError.unknownPlayer(playerID)
+        }
+        var events: [GameEvent] = []
+        let remainingCash = state.players[playerIndex].cash
+        if remainingCash.amount > 0 {
+            let transaction = try transfer(
+                remainingCash,
+                from: .player(playerID),
+                to: .bank,
+                reason: state.debt?.reason ?? .bankruptcy
+            )
+            events.append(.moneyTransferred(transaction))
+        }
+
+        let propertyIDs = ownedPropertyIDs(for: playerID)
+        for propertyID in propertyIDs {
+            state.propertyStates[propertyID]?.ownerID = nil
+            state.propertyStates[propertyID]?.isMortgaged = false
+        }
+        eliminatePlayer(at: playerIndex)
+        state.debt = nil
+        state.debtContinuation = nil
+        state.mortgageTransfer = nil
+        state.consecutiveDoubles = 0
+        events.append(.playerEliminated(playerID))
+
+        if state.activePlayers.count <= 1 {
+            events.append(contentsOf: try finishElimination(eliminatedPlayerID: playerID))
+            return events
+        }
+
+        guard let firstPropertyID = propertyIDs.first else {
+            events.append(contentsOf: try finishElimination(eliminatedPlayerID: playerID))
+            return events
+        }
+        let resolution = BankruptcyAuctionResolution(
+            eliminatedPlayerID: playerID,
+            remainingPropertyIDs: Array(propertyIDs.dropFirst())
+        )
+        state.bankruptcyAuction = resolution
+        events.append(contentsOf: try beginAuction(
+            propertyID: firstPropertyID,
+            purpose: .bankruptcy
+        ))
+        return events
+    }
+
+    mutating func continueBankruptcyAuctions() throws -> [GameEvent] {
+        guard var resolution = state.bankruptcyAuction else {
+            throw GameEngineError.invalidState
+        }
+        guard let nextPropertyID = resolution.remainingPropertyIDs.first else {
+            state.bankruptcyAuction = nil
+            return try finishElimination(
+                eliminatedPlayerID: resolution.eliminatedPlayerID
+            )
+        }
+        resolution.remainingPropertyIDs.removeFirst()
+        state.bankruptcyAuction = resolution
+        return try beginAuction(propertyID: nextPropertyID, purpose: .bankruptcy)
+    }
+
+    mutating func finishElimination(
+        eliminatedPlayerID: PlayerID
+    ) throws -> [GameEvent] {
+        let activePlayers = state.activePlayers
+        guard !activePlayers.isEmpty else {
+            throw GameEngineError.invalidState
+        }
+        if activePlayers.count == 1, let winner = activePlayers.first {
+            state.currentPlayerIndex = playerIndex(for: winner.id)
+            state.phase = .gameOver(winnerID: winner.id)
+            return [.winnerDeclared(winner.id)]
+        }
+
+        guard let currentIndex = state.currentPlayerIndex else {
+            throw GameEngineError.invalidState
+        }
+        let nextIndex = (1...state.players.count).compactMap { offset -> Int? in
+            let candidateIndex = (currentIndex + offset) % state.players.count
+            return state.players[candidateIndex].status == .active ? candidateIndex : nil
+        }.first
+        guard let nextIndex else {
+            throw GameEngineError.invalidState
+        }
+        let nextPlayerID = state.players[nextIndex].id
+        state.currentPlayerIndex = nextIndex
+        state.latestRoll = nil
+        state.auction = nil
+        state.debt = nil
+        state.debtContinuation = nil
+        state.mortgageTransfer = nil
+        state.bankruptcyAuction = nil
+        state.consecutiveDoubles = 0
+        state.phase = .awaitingRoll
+        return [.turnEnded(
+            playerID: eliminatedPlayerID,
+            nextPlayerID: nextPlayerID
+        )]
+    }
+
+    func ownedPropertyIDs(for playerID: PlayerID) -> [PropertyID] {
+        state.board.properties.compactMap { property in
+            state.propertyStates[property.id]?.ownerID == playerID ? property.id : nil
+        }
+    }
+
+    mutating func eliminatePlayer(at index: Int) {
+        state.players[index].cash = Money(0)
+        state.players[index].status = .bankrupt
+        state.players[index].detention = nil
     }
 }

@@ -87,10 +87,33 @@ final class GameSession {
     }
 
     var minimumAuctionBid: Money? {
-        guard let auction = state.auction else {
+        legalActions.compactMap { action -> Money? in
+            guard case let .placeAuctionBid(_, minimumBid) = action else {
+                return nil
+            }
+            return minimumBid
+        }.first
+    }
+
+    var ownedProperties: [PropertyDefinition] {
+        guard let playerID = actingPlayer?.id else {
+            return []
+        }
+        return state.board.properties.filter {
+            state.propertyStates[$0.id]?.ownerID == playerID
+        }
+    }
+
+    var transferredMortgageProperty: PropertyDefinition? {
+        guard case let .resolvingMortgageTransfer(resolution) = state.phase,
+              let propertyID = resolution.remainingPropertyIDs.first else {
             return nil
         }
-        return Money((auction.highBid?.amount.amount ?? 0) + 1)
+        return property(propertyID)
+    }
+
+    var canDeclareBankruptcy: Bool {
+        legalActions.contains(.declareBankruptcy)
     }
 
     func rollDice() {
@@ -99,6 +122,26 @@ final class GameSession {
 
     func payDetentionFee() {
         perform(.payDetentionFee)
+    }
+
+    func mortgage(_ propertyID: PropertyID) {
+        perform(.mortgageProperty(propertyID))
+    }
+
+    func unmortgage(_ propertyID: PropertyID) {
+        perform(.unmortgageProperty(propertyID))
+    }
+
+    func keepTransferredMortgage(_ propertyID: PropertyID) {
+        perform(.keepTransferredMortgage(propertyID))
+    }
+
+    func unmortgageTransferredProperty(_ propertyID: PropertyID) {
+        perform(.unmortgageTransferredProperty(propertyID))
+    }
+
+    func declareBankruptcy() {
+        perform(.declareBankruptcy)
     }
 
     func buyOfferedProperty() {
@@ -147,6 +190,46 @@ final class GameSession {
         }
         return playerName(ownerID)
     }
+
+    func mortgageProceeds(for propertyID: PropertyID) -> Money? {
+        legalActions.compactMap { action -> Money? in
+            guard case let .mortgageProperty(actionPropertyID, proceeds) = action,
+                  actionPropertyID == propertyID else {
+                return nil
+            }
+            return proceeds
+        }.first
+    }
+
+    func unmortgageCost(for propertyID: PropertyID) -> Money? {
+        legalActions.compactMap { action -> Money? in
+            guard case let .unmortgageProperty(actionPropertyID, cost) = action,
+                  actionPropertyID == propertyID else {
+                return nil
+            }
+            return cost
+        }.first
+    }
+
+    func transferredMortgageInterest(for propertyID: PropertyID) -> Money? {
+        legalActions.compactMap { action -> Money? in
+            guard case let .keepTransferredMortgage(actionPropertyID, interest) = action,
+                  actionPropertyID == propertyID else {
+                return nil
+            }
+            return interest
+        }.first
+    }
+
+    func transferredUnmortgageCost(for propertyID: PropertyID) -> Money? {
+        legalActions.compactMap { action -> Money? in
+            guard case let .unmortgageTransferredProperty(actionPropertyID, cost) = action,
+                  actionPropertyID == propertyID else {
+                return nil
+            }
+            return cost
+        }.first
+    }
 }
 
 private extension GameSession {
@@ -156,6 +239,10 @@ private extension GameSession {
             return remainingPlayerIDs.first
         case .awaitingAuction:
             return state.auction?.currentBidderID
+        case let .resolvingDebt(debt):
+            return debt.debtorID
+        case let .resolvingMortgageTransfer(resolution):
+            return resolution.recipientID
         default:
             return currentPlayer?.id
         }
@@ -217,6 +304,22 @@ private extension GameSession {
             return "\(playerName(playerID)) paid $\(amount.amount) in fees."
         case let .debtRequired(debt):
             return "\(playerName(debt.debtorID)) owes $\(debt.amount.amount)."
+        case let .debtPaid(debt):
+            return "\(playerName(debt.debtorID)) paid the $\(debt.amount.amount) balance."
+        case let .propertyMortgaged(playerID, propertyID, proceeds):
+            return "\(playerName(playerID)) mortgaged \(property(propertyID)?.name ?? "a location") for $\(proceeds.amount)."
+        case let .propertyUnmortgaged(playerID, propertyID, cost):
+            return "\(playerName(playerID)) unmortgaged \(property(propertyID)?.name ?? "a location") for $\(cost.amount)."
+        case let .propertyTransferred(propertyID, playerID, recipientID):
+            return "\(property(propertyID)?.name ?? "A location") transferred from \(playerName(playerID)) to \(playerName(recipientID))."
+        case let .transferredMortgageKept(playerID, propertyID, interest):
+            return "\(playerName(playerID)) paid $\(interest.amount) interest on \(property(propertyID)?.name ?? "a location")."
+        case let .bankruptcyDeclared(playerID, _):
+            return "\(playerName(playerID)) declared bankruptcy."
+        case let .playerEliminated(playerID):
+            return "\(playerName(playerID)) is out of the game."
+        case let .winnerDeclared(playerID):
+            return "\(playerName(playerID)) is the last restaurant group standing."
         case let .sentToDetention(playerID, _):
             return "\(playerName(playerID)) was closed for renovation."
         case let .thirdConsecutiveDouble(playerID):
