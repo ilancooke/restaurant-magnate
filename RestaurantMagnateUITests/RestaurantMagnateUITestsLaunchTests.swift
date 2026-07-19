@@ -1,13 +1,13 @@
 //
-//  MonopolyUITestsLaunchTests.swift
-//  MonopolyUITests
+//  RestaurantMagnateUITestsLaunchTests.swift
+//  RestaurantMagnateUITests
 //
 //  Created by ilan on 7/18/26.
 //
 
 import XCTest
 
-final class MonopolyUITestsLaunchTests: XCTestCase {
+final class RestaurantMagnateUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

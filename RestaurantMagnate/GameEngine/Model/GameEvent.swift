@@ -1,0 +1,27 @@
+import Foundation
+
+enum GameEvent: Hashable, Sendable {
+    case diceRolled(playerID: PlayerID, roll: DiceRoll)
+    case openingRollTied(playerIDs: [PlayerID])
+    case starterSelected(PlayerID)
+    case playerMoved(playerID: PlayerID, from: BoardSpaceID, to: BoardSpaceID)
+    case passedGrandOpening(playerID: PlayerID, amount: Money)
+    case landed(playerID: PlayerID, spaceID: BoardSpaceID)
+    case purchaseOffered(playerID: PlayerID, propertyID: PropertyID)
+    case propertyPurchased(playerID: PlayerID, propertyID: PropertyID, price: Money)
+    case auctionStarted(propertyID: PropertyID, firstBidderID: PlayerID)
+    case auctionBidPlaced(propertyID: PropertyID, bid: AuctionBid)
+    case auctionBidderWithdrew(propertyID: PropertyID, playerID: PlayerID)
+    case auctionWon(propertyID: PropertyID, bid: AuctionBid)
+    case auctionEndedWithoutSale(propertyID: PropertyID)
+    case rentPaid(propertyID: PropertyID, from: PlayerID, to: PlayerID, amount: Money)
+    case taxPaid(playerID: PlayerID, amount: Money)
+    case moneyTransferred(BankTransaction)
+    case debtRequired(Debt)
+    case sentToDetention(playerID: PlayerID, destination: BoardSpaceID)
+    case thirdConsecutiveDouble(playerID: PlayerID)
+    case detentionRollFailed(playerID: PlayerID, failedRolls: Int)
+    case detentionFeePaid(playerID: PlayerID, amount: Money)
+    case releasedFromDetention(playerID: PlayerID)
+    case turnEnded(playerID: PlayerID, nextPlayerID: PlayerID)
+}

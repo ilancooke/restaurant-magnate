@@ -12,37 +12,37 @@
 			containerPortal = EF7CE4B5300C62290076F6EF /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = EF7CE4BC300C62290076F6EF;
-			remoteInfo = Monopoly;
+			remoteInfo = RestaurantMagnate;
 		};
 		EF7CE4D5300C622B0076F6EF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = EF7CE4B5300C62290076F6EF /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = EF7CE4BC300C62290076F6EF;
-			remoteInfo = Monopoly;
+			remoteInfo = RestaurantMagnate;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		EF7CE4BD300C62290076F6EF /* Monopoly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Monopoly.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		EF7CE4CA300C622B0076F6EF /* MonopolyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MonopolyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		EF7CE4D4300C622B0076F6EF /* MonopolyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MonopolyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF7CE4BD300C62290076F6EF /* RestaurantMagnate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RestaurantMagnate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF7CE4CA300C622B0076F6EF /* RestaurantMagnateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RestaurantMagnateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF7CE4D4300C622B0076F6EF /* RestaurantMagnateUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RestaurantMagnateUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		EF7CE4BF300C62290076F6EF /* Monopoly */ = {
+		EF7CE4BF300C62290076F6EF /* RestaurantMagnate */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Monopoly;
+			path = RestaurantMagnate;
 			sourceTree = "<group>";
 		};
-		EF7CE4CD300C622B0076F6EF /* MonopolyTests */ = {
+		EF7CE4CD300C622B0076F6EF /* RestaurantMagnateTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MonopolyTests;
+			path = RestaurantMagnateTests;
 			sourceTree = "<group>";
 		};
-		EF7CE4D7300C622B0076F6EF /* MonopolyUITests */ = {
+		EF7CE4D7300C622B0076F6EF /* RestaurantMagnateUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MonopolyUITests;
+			path = RestaurantMagnateUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,9 +75,9 @@
 		EF7CE4B4300C62290076F6EF = {
 			isa = PBXGroup;
 			children = (
-				EF7CE4BF300C62290076F6EF /* Monopoly */,
-				EF7CE4CD300C622B0076F6EF /* MonopolyTests */,
-				EF7CE4D7300C622B0076F6EF /* MonopolyUITests */,
+				EF7CE4BF300C62290076F6EF /* RestaurantMagnate */,
+				EF7CE4CD300C622B0076F6EF /* RestaurantMagnateTests */,
+				EF7CE4D7300C622B0076F6EF /* RestaurantMagnateUITests */,
 				EF7CE4BE300C62290076F6EF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,9 +85,9 @@
 		EF7CE4BE300C62290076F6EF /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				EF7CE4BD300C62290076F6EF /* Monopoly.app */,
-				EF7CE4CA300C622B0076F6EF /* MonopolyTests.xctest */,
-				EF7CE4D4300C622B0076F6EF /* MonopolyUITests.xctest */,
+				EF7CE4BD300C62290076F6EF /* RestaurantMagnate.app */,
+				EF7CE4CA300C622B0076F6EF /* RestaurantMagnateTests.xctest */,
+				EF7CE4D4300C622B0076F6EF /* RestaurantMagnateUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EF7CE4BC300C62290076F6EF /* Monopoly */ = {
+		EF7CE4BC300C62290076F6EF /* RestaurantMagnate */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EF7CE4DE300C622B0076F6EF /* Build configuration list for PBXNativeTarget "Monopoly" */;
+			buildConfigurationList = EF7CE4DE300C622B0076F6EF /* Build configuration list for PBXNativeTarget "RestaurantMagnate" */;
 			buildPhases = (
 				EF7CE4B9300C62290076F6EF /* Sources */,
 				EF7CE4BA300C62290076F6EF /* Frameworks */,
@@ -108,18 +108,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				EF7CE4BF300C62290076F6EF /* Monopoly */,
+				EF7CE4BF300C62290076F6EF /* RestaurantMagnate */,
 			);
-			name = Monopoly;
+			name = RestaurantMagnate;
 			packageProductDependencies = (
 			);
-			productName = Monopoly;
-			productReference = EF7CE4BD300C62290076F6EF /* Monopoly.app */;
+			productName = RestaurantMagnate;
+			productReference = EF7CE4BD300C62290076F6EF /* RestaurantMagnate.app */;
 			productType = "com.apple.product-type.application";
 		};
-		EF7CE4C9300C622B0076F6EF /* MonopolyTests */ = {
+		EF7CE4C9300C622B0076F6EF /* RestaurantMagnateTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EF7CE4E1300C622B0076F6EF /* Build configuration list for PBXNativeTarget "MonopolyTests" */;
+			buildConfigurationList = EF7CE4E1300C622B0076F6EF /* Build configuration list for PBXNativeTarget "RestaurantMagnateTests" */;
 			buildPhases = (
 				EF7CE4C6300C622B0076F6EF /* Sources */,
 				EF7CE4C7300C622B0076F6EF /* Frameworks */,
@@ -131,18 +131,18 @@
 				EF7CE4CC300C622B0076F6EF /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				EF7CE4CD300C622B0076F6EF /* MonopolyTests */,
+				EF7CE4CD300C622B0076F6EF /* RestaurantMagnateTests */,
 			);
-			name = MonopolyTests;
+			name = RestaurantMagnateTests;
 			packageProductDependencies = (
 			);
-			productName = MonopolyTests;
-			productReference = EF7CE4CA300C622B0076F6EF /* MonopolyTests.xctest */;
+			productName = RestaurantMagnateTests;
+			productReference = EF7CE4CA300C622B0076F6EF /* RestaurantMagnateTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		EF7CE4D3300C622B0076F6EF /* MonopolyUITests */ = {
+		EF7CE4D3300C622B0076F6EF /* RestaurantMagnateUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EF7CE4E4300C622B0076F6EF /* Build configuration list for PBXNativeTarget "MonopolyUITests" */;
+			buildConfigurationList = EF7CE4E4300C622B0076F6EF /* Build configuration list for PBXNativeTarget "RestaurantMagnateUITests" */;
 			buildPhases = (
 				EF7CE4D0300C622B0076F6EF /* Sources */,
 				EF7CE4D1300C622B0076F6EF /* Frameworks */,
@@ -154,13 +154,13 @@
 				EF7CE4D6300C622B0076F6EF /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				EF7CE4D7300C622B0076F6EF /* MonopolyUITests */,
+				EF7CE4D7300C622B0076F6EF /* RestaurantMagnateUITests */,
 			);
-			name = MonopolyUITests;
+			name = RestaurantMagnateUITests;
 			packageProductDependencies = (
 			);
-			productName = MonopolyUITests;
-			productReference = EF7CE4D4300C622B0076F6EF /* MonopolyUITests.xctest */;
+			productName = RestaurantMagnateUITests;
+			productReference = EF7CE4D4300C622B0076F6EF /* RestaurantMagnateUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = EF7CE4B8300C62290076F6EF /* Build configuration list for PBXProject "Monopoly" */;
+			buildConfigurationList = EF7CE4B8300C62290076F6EF /* Build configuration list for PBXProject "RestaurantMagnate" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -200,9 +200,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EF7CE4BC300C62290076F6EF /* Monopoly */,
-				EF7CE4C9300C622B0076F6EF /* MonopolyTests */,
-				EF7CE4D3300C622B0076F6EF /* MonopolyUITests */,
+				EF7CE4BC300C62290076F6EF /* RestaurantMagnate */,
+				EF7CE4C9300C622B0076F6EF /* RestaurantMagnateTests */,
+				EF7CE4D3300C622B0076F6EF /* RestaurantMagnateUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -258,12 +258,12 @@
 /* Begin PBXTargetDependency section */
 		EF7CE4CC300C622B0076F6EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EF7CE4BC300C62290076F6EF /* Monopoly */;
+			target = EF7CE4BC300C62290076F6EF /* RestaurantMagnate */;
 			targetProxy = EF7CE4CB300C622B0076F6EF /* PBXContainerItemProxy */;
 		};
 		EF7CE4D6300C622B0076F6EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EF7CE4BC300C62290076F6EF /* Monopoly */;
+			target = EF7CE4BC300C62290076F6EF /* RestaurantMagnate */;
 			targetProxy = EF7CE4D5300C622B0076F6EF /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -400,6 +400,7 @@
 				DEVELOPMENT_TEAM = QB7F746RZ8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Restaurant Magnate";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -410,7 +411,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.Monopoly;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.RestaurantMagnate;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -432,6 +433,7 @@
 				DEVELOPMENT_TEAM = QB7F746RZ8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Restaurant Magnate";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -442,7 +444,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.Monopoly;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.RestaurantMagnate;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -464,7 +466,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.MonopolyTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.RestaurantMagnateTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -472,7 +474,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Monopoly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Monopoly";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RestaurantMagnate.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RestaurantMagnate";
 			};
 			name = Debug;
 		};
@@ -486,7 +488,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.MonopolyTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.RestaurantMagnateTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -494,7 +496,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Monopoly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Monopoly";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RestaurantMagnate.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/RestaurantMagnate";
 			};
 			name = Release;
 		};
@@ -506,7 +508,7 @@
 				DEVELOPMENT_TEAM = QB7F746RZ8;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.MonopolyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.RestaurantMagnateUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -514,7 +516,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Monopoly;
+				TEST_TARGET_NAME = RestaurantMagnate;
 			};
 			name = Debug;
 		};
@@ -526,7 +528,7 @@
 				DEVELOPMENT_TEAM = QB7F746RZ8;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.MonopolyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clearsignallabs.RestaurantMagnateUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -534,14 +536,14 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Monopoly;
+				TEST_TARGET_NAME = RestaurantMagnate;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		EF7CE4B8300C62290076F6EF /* Build configuration list for PBXProject "Monopoly" */ = {
+		EF7CE4B8300C62290076F6EF /* Build configuration list for PBXProject "RestaurantMagnate" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EF7CE4DC300C622B0076F6EF /* Debug */,
@@ -550,7 +552,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EF7CE4DE300C622B0076F6EF /* Build configuration list for PBXNativeTarget "Monopoly" */ = {
+		EF7CE4DE300C622B0076F6EF /* Build configuration list for PBXNativeTarget "RestaurantMagnate" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EF7CE4DF300C622B0076F6EF /* Debug */,
@@ -559,7 +561,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EF7CE4E1300C622B0076F6EF /* Build configuration list for PBXNativeTarget "MonopolyTests" */ = {
+		EF7CE4E1300C622B0076F6EF /* Build configuration list for PBXNativeTarget "RestaurantMagnateTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EF7CE4E2300C622B0076F6EF /* Debug */,
@@ -568,7 +570,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EF7CE4E4300C622B0076F6EF /* Build configuration list for PBXNativeTarget "MonopolyUITests" */ = {
+		EF7CE4E4300C622B0076F6EF /* Build configuration list for PBXNativeTarget "RestaurantMagnateUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EF7CE4E5300C622B0076F6EF /* Debug */,
