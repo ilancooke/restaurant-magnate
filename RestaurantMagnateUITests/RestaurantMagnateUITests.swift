@@ -27,7 +27,8 @@ final class RestaurantMagnateUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Restaurant Magnate"].waitForExistence(timeout: 5))
+        let gameTitle = app.descendants(matching: .any)["game-title"]
+        XCTAssertTrue(gameTitle.waitForExistence(timeout: 5))
 
         let startButton = app.buttons["setup-start"]
         XCTAssertTrue(startButton.exists)
@@ -50,6 +51,31 @@ final class RestaurantMagnateUITests: XCTestCase {
         rollButton.tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["event-feed"].exists)
+    }
+
+    @MainActor
+    func testFourPlayerSetupRemainsUsable() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let fourPlayers = app.segmentedControls.buttons["4 PLAYERS"]
+        XCTAssertTrue(fourPlayers.waitForExistence(timeout: 5))
+        fourPlayers.tap()
+
+        for index in 0..<4 {
+            XCTAssertTrue(app.textFields["player-name-\(index)"].exists)
+        }
+
+        let startButton = app.buttons["setup-start"]
+        for _ in 0..<3 where !startButton.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(startButton.isHittable)
+
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Restaurant Magnate four player setup on iPhone 13"
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     @MainActor

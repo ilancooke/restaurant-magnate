@@ -8,29 +8,22 @@ struct GameView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 18) {
-                playerStrip
-                TurnControlPanel(session: session)
-                GameBoardView(state: session.state, selectedSpaceID: $selectedSpaceID)
-                selectedSpaceDetail
-                eventFeed
+            VStack(spacing: 0) {
+                gameHeader
+
+                VStack(spacing: 16) {
+                    playerStrip
+                    TurnControlPanel(session: session)
+                    GameBoardView(state: session.state, selectedSpaceID: $selectedSpaceID)
+                    selectedSpaceDetail
+                    eventFeed
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 16)
             }
-            .padding(.horizontal, 14)
-            .padding(.bottom, 28)
         }
         .background(RestaurantTheme.canvas)
-        .navigationTitle("Restaurant Magnate")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showNewGameConfirmation = true
-                } label: {
-                    Image(systemName: "arrow.counterclockwise")
-                }
-                .accessibilityLabel("Start new game")
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .confirmationDialog(
             "Start a new game?",
             isPresented: $showNewGameConfirmation,
@@ -46,6 +39,67 @@ struct GameView: View {
         }
     }
 
+    private var gameHeader: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Rectangle()
+                    .fill(RestaurantTheme.tomato)
+                Image(systemName: "fork.knife")
+                    .font(.headline.weight(.black))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 38, height: 42)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("RESTAURANT")
+                    .foregroundStyle(.white)
+                Text("MAGNATE")
+                    .foregroundStyle(RestaurantTheme.coral)
+            }
+            .font(.system(size: 15, weight: .black, design: .rounded))
+            .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            if let player = session.actingPlayer {
+                Image(systemName: player.token.symbolName)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(RestaurantTheme.color(for: player.token))
+                    .frame(width: 30, height: 30)
+                    .background(.white.opacity(0.1))
+
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(player.name)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text("$\(player.cash.amount)")
+                        .font(.subheadline.bold().monospacedDigit())
+                        .foregroundStyle(RestaurantTheme.mustard)
+                }
+            }
+
+            Button {
+                showNewGameConfirmation = true
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(.white.opacity(0.1))
+            }
+            .accessibilityLabel("Start new game")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background(RestaurantTheme.asphalt)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(RestaurantTheme.tomato)
+                .frame(height: 3)
+        }
+    }
+
     private var playerStrip: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
             ForEach(session.state.players, id: \.id) { player in
@@ -58,56 +112,85 @@ struct GameView: View {
                 )
             }
         }
-        .padding(.top, 10)
     }
 
     private var selectedSpaceDetail: some View {
         let space = session.state.board[selectedSpaceID.rawValue]
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Image(systemName: space.kind.symbolName)
-                    .foregroundStyle(space.kind.accentColor)
-                Text(space.name)
-                    .font(.headline)
-                Spacer()
-                Text("#\(space.position)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(RestaurantTheme.secondaryInk)
-            }
+        return HStack(spacing: 0) {
+            Rectangle()
+                .fill(space.kind.accentColor)
+                .frame(width: 7)
 
-            if case let .property(property) = space.kind {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Price $\(property.purchasePrice.amount)")
-                    if let owner = session.ownerName(for: property.id) {
-                        Text("Owned by \(owner)")
-                        if session.state.propertyStates[property.id]?.isMortgaged == true {
-                            Label("Mortgaged", systemImage: "lock.fill")
-                        }
-                    } else {
-                        Text("Bank owned")
-                    }
+                    Image(systemName: space.kind.symbolName)
+                        .foregroundStyle(space.kind.accentColor)
+                    Text(space.name)
+                        .font(RestaurantTheme.compactTitle)
+                        .lineLimit(2)
+                    Spacer()
+                    Text("#\(space.position)")
+                        .font(.caption.bold().monospacedDigit())
+                        .foregroundStyle(RestaurantTheme.secondaryInk)
                 }
-                .font(.subheadline)
-                .foregroundStyle(RestaurantTheme.secondaryInk)
+
+                if case let .property(property) = space.kind {
+                    HStack(spacing: 12) {
+                        Label("$\(property.purchasePrice.amount)", systemImage: "tag.fill")
+                        if let owner = session.ownerName(for: property.id) {
+                            Label(owner, systemImage: "person.fill")
+                            if session.state.propertyStates[property.id]?.isMortgaged == true {
+                                Image(systemName: "lock.fill")
+                                    .accessibilityLabel("Mortgaged")
+                            }
+                        } else {
+                            Label("Bank", systemImage: "building.columns.fill")
+                        }
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RestaurantTheme.secondaryInk)
+                }
             }
+            .padding(12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 2)
+        .background(RestaurantTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay {
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(RestaurantTheme.line, lineWidth: 1)
+        }
     }
 
     private var eventFeed: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Recent Activity", systemImage: "list.bullet.rectangle")
-                .font(.headline)
+            HStack {
+                Label("RECENT ACTIVITY", systemImage: "list.bullet.rectangle")
+                    .font(RestaurantTheme.compactTitle)
+                Spacer()
+                Image(systemName: "receipt")
+                    .foregroundStyle(RestaurantTheme.tomato)
+            }
             ForEach(Array(session.eventLog.suffix(4).enumerated()), id: \.offset) { _, message in
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(RestaurantTheme.secondaryInk)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Circle()
+                        .fill(RestaurantTheme.mustard)
+                        .frame(width: 5, height: 5)
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(RestaurantTheme.secondaryInk)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, 4)
+        .padding(14)
+        .background(RestaurantTheme.paper)
+        .overlay(alignment: .leading) {
+            Rectangle()
+                .fill(RestaurantTheme.tomato)
+                .frame(width: 3)
+        }
         .accessibilityIdentifier("event-feed")
     }
 }
@@ -120,10 +203,13 @@ private struct PlayerSummaryView: View {
     var body: some View {
         HStack(spacing: 9) {
             Image(systemName: player.token.symbolName)
-                .frame(width: 28, height: 28)
-                .foregroundStyle(RestaurantTheme.color(for: player.token))
-                .background(RestaurantTheme.color(for: player.token).opacity(0.12))
-                .clipShape(Circle())
+                .font(.subheadline.weight(.bold))
+                .frame(width: 32, height: 32)
+                .foregroundStyle(isActing ? .white : RestaurantTheme.color(for: player.token))
+                .background(
+                    RestaurantTheme.color(for: player.token).opacity(isActing ? 1 : 0.14)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 5))
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
@@ -137,7 +223,7 @@ private struct PlayerSummaryView: View {
                 }
                 Text("$\(player.cash.amount) · \(propertyCount) sites")
                     .font(.caption.monospacedDigit())
-                    .foregroundStyle(RestaurantTheme.secondaryInk)
+                    .foregroundStyle(isActing ? .white.opacity(0.72) : RestaurantTheme.secondaryInk)
                     .lineLimit(1)
                 if player.status == .bankrupt {
                     Text("Bankrupt")
@@ -148,11 +234,12 @@ private struct PlayerSummaryView: View {
             Spacer(minLength: 0)
         }
         .padding(9)
-        .background(RestaurantTheme.surface)
+        .foregroundStyle(isActing ? .white : RestaurantTheme.ink)
+        .background(isActing ? RestaurantTheme.asphalt : RestaurantTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isActing ? RestaurantTheme.tomato : RestaurantTheme.line, lineWidth: isActing ? 2 : 1)
+                .stroke(isActing ? RestaurantTheme.tomato : RestaurantTheme.line, lineWidth: isActing ? 3 : 1)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(player.name), $\(player.cash.amount), \(propertyCount) locations")
@@ -169,18 +256,22 @@ private struct TurnControlPanel: View {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(phaseTitle)
-                        .font(.headline)
+                        .font(RestaurantTheme.compactTitle)
+                        .textCase(.uppercase)
                     if let actingPlayer = session.actingPlayer {
                         Text(actingPlayer.name)
                             .font(.subheadline)
-                            .foregroundStyle(RestaurantTheme.secondaryInk)
+                            .foregroundStyle(.white.opacity(0.68))
                     }
                 }
                 Spacer()
                 if let roll = session.state.latestRoll {
                     Text("\(roll.total)")
-                        .font(.title2.bold().monospacedDigit())
-                        .accessibilityLabel("Latest roll total \(roll.total)")
+                        .font(.headline.bold().monospacedDigit())
+                        .foregroundStyle(RestaurantTheme.ink)
+                        .frame(width: 36, height: 30)
+                        .background(RestaurantTheme.mustard)
+                    .accessibilityLabel("Latest roll total \(roll.total)")
                 }
             }
 
@@ -194,22 +285,23 @@ private struct TurnControlPanel: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
-                .tint(RestaurantTheme.ink)
+                .tint(.white)
                 .accessibilityIdentifier("manage-locations")
             }
 
             if let error = session.errorMessage {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(RestaurantTheme.tomato)
+                    .foregroundStyle(RestaurantTheme.coral)
             }
         }
         .padding(14)
-        .background(RestaurantTheme.surface)
+        .foregroundStyle(.white)
+        .background(RestaurantTheme.asphalt)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay {
             RoundedRectangle(cornerRadius: 8)
-                .stroke(RestaurantTheme.line, lineWidth: 1)
+                .stroke(RestaurantTheme.tomato, lineWidth: 2)
         }
         .accessibilityIdentifier("turn-controls")
         .sheet(isPresented: $showAssetManagement) {
@@ -267,7 +359,7 @@ private struct TurnControlPanel: View {
                     systemImage: "exclamationmark.triangle.fill"
                 )
                 .foregroundStyle(RestaurantTheme.tomato)
-                AssetManagementRows(session: session)
+                AssetManagementRows(session: session, onDark: true)
                 bankruptcyButton
             }
 
@@ -295,7 +387,7 @@ private struct TurnControlPanel: View {
                             session.keepTransferredMortgage(property.id)
                         }
                     }
-                    AssetManagementRows(session: session)
+                    AssetManagementRows(session: session, onDark: true)
                     bankruptcyButton
                 }
             }
@@ -350,6 +442,7 @@ private struct TurnControlPanel: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
+        .tint(RestaurantTheme.coral)
         .disabled(!session.canDeclareBankruptcy)
         .accessibilityIdentifier("declare-bankruptcy")
     }
@@ -378,9 +471,9 @@ private struct TurnControlPanel: View {
             Label(title, systemImage: icon)
                 .font(.headline)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background(RestaurantTheme.surface)
-                .foregroundStyle(RestaurantTheme.ink)
+                        .padding(.vertical, 13)
+                        .background(RestaurantTheme.surface)
+                        .foregroundStyle(RestaurantTheme.ink)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay {
                     RoundedRectangle(cornerRadius: 8)
@@ -401,13 +494,14 @@ private struct AssetManagementView: View {
                 if session.ownedProperties.isEmpty {
                     ContentUnavailableView(
                         "No Locations",
-                        systemImage: "building.2",
-                        description: Text("Purchased locations appear here.")
+                        systemImage: "building.2"
                     )
                 } else {
                     AssetManagementRows(session: session)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(RestaurantTheme.canvas)
             .navigationTitle("Manage Locations")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -422,6 +516,7 @@ private struct AssetManagementView: View {
 
 private struct AssetManagementRows: View {
     @Bindable var session: GameSession
+    var onDark = false
 
     var body: some View {
         ForEach(session.ownedProperties, id: \.id) { property in
@@ -429,9 +524,10 @@ private struct AssetManagementRows: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(property.name)
                         .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(onDark ? .white : RestaurantTheme.ink)
                     Text(status(for: property))
                         .font(.caption)
-                        .foregroundStyle(RestaurantTheme.secondaryInk)
+                        .foregroundStyle(onDark ? .white.opacity(0.66) : RestaurantTheme.secondaryInk)
                 }
                 Spacer(minLength: 8)
                 if let proceeds = session.mortgageProceeds(for: property.id) {
@@ -439,15 +535,18 @@ private struct AssetManagementRows: View {
                         session.mortgage(property.id)
                     }
                     .buttonStyle(.bordered)
+                    .tint(onDark ? .white : RestaurantTheme.ink)
                     .accessibilityLabel("Mortgage \(property.name) for $\(proceeds.amount)")
                 } else if let cost = session.unmortgageCost(for: property.id) {
                     Button("Pay $\(cost.amount)") {
                         session.unmortgage(property.id)
                     }
                     .buttonStyle(.bordered)
+                    .tint(onDark ? .white : RestaurantTheme.ink)
                     .accessibilityLabel("Unmortgage \(property.name) for $\(cost.amount)")
                 }
             }
+            .padding(.vertical, onDark ? 3 : 0)
         }
     }
 
@@ -472,7 +571,7 @@ private struct AuctionControls: View {
             if let highBid = session.state.auction?.highBid {
                 Text("High bid $\(highBid.amount.amount) · \(session.playerName(highBid.bidderID))")
                     .font(.subheadline)
-                    .foregroundStyle(RestaurantTheme.secondaryInk)
+                    .foregroundStyle(.white.opacity(0.68))
             }
 
             if canBid {
@@ -501,6 +600,7 @@ private struct AuctionControls: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)
+                        .background(RestaurantTheme.surface)
                         .overlay {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(RestaurantTheme.ink, lineWidth: 1)

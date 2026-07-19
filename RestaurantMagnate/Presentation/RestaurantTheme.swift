@@ -1,16 +1,23 @@
 import SwiftUI
 
 enum RestaurantTheme {
-    static let canvas = Color(red: 0.965, green: 0.953, blue: 0.918)
-    static let surface = Color.white
-    static let ink = Color(red: 0.12, green: 0.14, blue: 0.13)
-    static let secondaryInk = Color(red: 0.36, green: 0.37, blue: 0.34)
-    static let line = Color(red: 0.78, green: 0.76, blue: 0.69)
-    static let tomato = Color(red: 0.78, green: 0.18, blue: 0.15)
-    static let mustard = Color(red: 0.91, green: 0.65, blue: 0.08)
-    static let aqua = Color(red: 0.10, green: 0.62, blue: 0.66)
-    static let leaf = Color(red: 0.20, green: 0.54, blue: 0.28)
-    static let cobalt = Color(red: 0.12, green: 0.33, blue: 0.68)
+    static let canvas = Color(red: 0.94, green: 0.93, blue: 0.88)
+    static let paper = Color(red: 0.985, green: 0.975, blue: 0.94)
+    static let surface = Color(red: 0.995, green: 0.992, blue: 0.98)
+    static let asphalt = Color(red: 0.07, green: 0.085, blue: 0.08)
+    static let road = Color(red: 0.24, green: 0.26, blue: 0.24)
+    static let ink = Color(red: 0.09, green: 0.105, blue: 0.10)
+    static let secondaryInk = Color(red: 0.34, green: 0.35, blue: 0.32)
+    static let line = Color(red: 0.70, green: 0.68, blue: 0.61)
+    static let tomato = Color(red: 0.84, green: 0.18, blue: 0.12)
+    static let coral = Color(red: 0.93, green: 0.34, blue: 0.22)
+    static let mustard = Color(red: 0.95, green: 0.67, blue: 0.04)
+    static let aqua = Color(red: 0.07, green: 0.60, blue: 0.61)
+    static let leaf = Color(red: 0.20, green: 0.57, blue: 0.29)
+    static let cobalt = Color(red: 0.10, green: 0.31, blue: 0.64)
+
+    static let compactTitle = Font.system(.headline, design: .rounded).weight(.black)
+    static let sectionTitle = Font.system(.title3, design: .rounded).weight(.black)
 
     static func color(for token: PlayerToken) -> Color {
         switch token {
@@ -85,6 +92,48 @@ extension BoardSpaceKind {
         case .tax, .sendToDetention: return RestaurantTheme.tomato
         case .start, .neutral: return RestaurantTheme.leaf
         case .detention: return RestaurantTheme.cobalt
+        }
+    }
+
+    var boardFill: Color {
+        switch self {
+        case let .property(property):
+            if case let .restaurant(group, _) = property.rentRule {
+                return RestaurantTheme.color(for: group)
+            }
+            switch property.rentRule {
+            case .deliveryService: return RestaurantTheme.cobalt
+            case .infrastructure: return RestaurantTheme.aqua
+            case .restaurant: return accentColor
+            }
+        case .event(.driveThruOrder): return RestaurantTheme.mustard
+        case .event(.secretRecipe): return RestaurantTheme.paper
+        case .tax: return RestaurantTheme.tomato
+        case .detention: return RestaurantTheme.cobalt
+        case .neutral: return RestaurantTheme.mustard
+        case .sendToDetention: return RestaurantTheme.tomato
+        case .start: return RestaurantTheme.leaf
+        }
+    }
+
+    var boardForeground: Color {
+        switch self {
+        case let .property(property):
+            switch property.rentRule {
+            case let .restaurant(group, _):
+                switch group {
+                case .classicBurgers, .sandwichesAndCafes:
+                    return RestaurantTheme.ink
+                default:
+                    return .white
+                }
+            case .deliveryService, .infrastructure:
+                return .white
+            }
+        case .event(.secretRecipe), .event(.driveThruOrder), .neutral:
+            return RestaurantTheme.ink
+        default:
+            return .white
         }
     }
 }
