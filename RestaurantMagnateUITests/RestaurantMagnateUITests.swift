@@ -19,13 +19,14 @@ final class RestaurantMagnateUITests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        XCUIDevice.shared.orientation = .portrait
     }
 
     @MainActor
     func testStartsPassAndPlayGameAndRolls() throws {
         let app = XCUIApplication()
         app.launch()
+        rotateToLandscape(app)
 
         let gameTitle = app.descendants(matching: .any)["game-title"]
         XCTAssertTrue(gameTitle.waitForExistence(timeout: 5))
@@ -39,7 +40,7 @@ final class RestaurantMagnateUITests: XCTestCase {
 
         let screenshot = XCUIScreen.main.screenshot()
         let attachment = XCTAttachment(screenshot: screenshot)
-        attachment.name = "Restaurant Magnate game board on iPhone 13"
+        attachment.name = "Restaurant Magnate landscape game board on iPhone 13"
         attachment.lifetime = .keepAlways
         add(attachment)
 
@@ -57,6 +58,7 @@ final class RestaurantMagnateUITests: XCTestCase {
     func testFourPlayerSetupRemainsUsable() throws {
         let app = XCUIApplication()
         app.launch()
+        rotateToLandscape(app)
 
         let fourPlayers = app.segmentedControls.buttons["4 PLAYERS"]
         XCTAssertTrue(fourPlayers.waitForExistence(timeout: 5))
@@ -72,7 +74,7 @@ final class RestaurantMagnateUITests: XCTestCase {
         }
         XCTAssertTrue(startButton.isHittable)
 
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = "Restaurant Magnate four player setup on iPhone 13"
         attachment.lifetime = .keepAlways
         add(attachment)
@@ -84,5 +86,24 @@ final class RestaurantMagnateUITests: XCTestCase {
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }
+    }
+
+    @MainActor
+    private func rotateToLandscape(_ app: XCUIApplication) {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let window = app.windows.firstMatch
+        let landscapeWindow = XCTNSPredicateExpectation(
+            predicate: NSPredicate { object, _ in
+                guard let element = object as? XCUIElement else {
+                    return false
+                }
+                return element.exists && element.frame.width > element.frame.height
+            },
+            object: window
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [landscapeWindow], timeout: 5),
+            .completed
+        )
     }
 }

@@ -7,19 +7,11 @@ struct GameView: View {
     @State private var showNewGameConfirmation = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                gameHeader
-
-                VStack(spacing: 16) {
-                    playerStrip
-                    TurnControlPanel(session: session)
-                    GameBoardView(state: session.state, selectedSpaceID: $selectedSpaceID)
-                    selectedSpaceDetail
-                    eventFeed
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 16)
+        GeometryReader { proxy in
+            if proxy.size.width > proxy.size.height {
+                landscapeLayout(in: proxy.size)
+            } else {
+                portraitLayout
             }
         }
         .background(RestaurantTheme.canvas)
@@ -37,6 +29,46 @@ struct GameView: View {
                 selectedSpaceID = newPosition
             }
         }
+    }
+
+    private var portraitLayout: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                gameHeader
+
+                VStack(spacing: 16) {
+                    playerStrip
+                    TurnControlPanel(session: session)
+                    GameBoardView(state: session.state, selectedSpaceID: $selectedSpaceID)
+                    selectedSpaceDetail
+                    eventFeed
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 16)
+            }
+        }
+    }
+
+    private func landscapeLayout(in size: CGSize) -> some View {
+        let boardSide = min(size.height - 20, size.width * 0.52)
+
+        return HStack(alignment: .center, spacing: 12) {
+            GameBoardView(state: session.state, selectedSpaceID: $selectedSpaceID)
+                .frame(width: boardSide, height: boardSide)
+
+            ScrollView {
+                VStack(spacing: 10) {
+                    gameHeader
+                    playerStrip
+                    TurnControlPanel(session: session)
+                    selectedSpaceDetail
+                    eventFeed
+                }
+            }
+            .scrollIndicators(.hidden)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .padding(10)
     }
 
     private var gameHeader: some View {

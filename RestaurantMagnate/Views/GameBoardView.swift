@@ -50,25 +50,41 @@ struct GameBoardView: View {
 
     private var centerPanel: some View {
         ZStack {
-            RestaurantDistrictView()
+            Image("RestaurantDistrict")
+                .resizable()
+                .scaledToFill()
+                .accessibilityHidden(true)
+
+            LinearGradient(
+                colors: [
+                    RestaurantTheme.asphalt.opacity(0.42),
+                    .clear,
+                    RestaurantTheme.asphalt.opacity(0.18)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .blendMode(.multiply)
 
             VStack(spacing: 5) {
                 Image(systemName: "fork.knife")
-                    .font(.headline.weight(.black))
+                    .font(.caption.weight(.black))
                     .foregroundStyle(.white)
                 Text("RESTAURANT")
                     .foregroundStyle(.white)
                 Text("MAGNATE")
                     .foregroundStyle(RestaurantTheme.coral)
             }
-            .font(.system(size: 12, weight: .black, design: .rounded))
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .background(RestaurantTheme.asphalt.opacity(0.94))
+            .font(.system(size: 9, weight: .black, design: .rounded))
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
+            .background(RestaurantTheme.asphalt.opacity(0.9))
             .overlay {
                 Rectangle()
-                    .stroke(RestaurantTheme.mustard, lineWidth: 2)
+                    .stroke(RestaurantTheme.mustard, lineWidth: 1.5)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(8)
 
             if let roll = state.latestRoll {
                 HStack(spacing: 8) {
@@ -77,7 +93,8 @@ struct GameBoardView: View {
                 }
                 .padding(6)
                 .background(RestaurantTheme.asphalt.opacity(0.9))
-                .offset(y: 72)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .padding(8)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -223,71 +240,5 @@ private struct DieView: View {
         return positions.map {
             UnitPoint(x: 0.22 + ($0.x * 0.56), y: 0.22 + ($0.y * 0.56))
         }
-    }
-}
-
-private struct RestaurantDistrictView: View {
-    private let tiles: [(Color, String)] = [
-        (RestaurantTheme.tomato, "takeoutbag.and.cup.and.straw"),
-        (RestaurantTheme.mustard, "cup.and.saucer.fill"),
-        (RestaurantTheme.aqua, "shippingbox.fill"),
-        (RestaurantTheme.leaf, "leaf.fill"),
-        (RestaurantTheme.cobalt, "building.2.fill"),
-        (RestaurantTheme.coral, "fork.knife"),
-        (RestaurantTheme.mustard, "birthday.cake.fill"),
-        (RestaurantTheme.aqua, "bicycle"),
-        (RestaurantTheme.leaf, "storefront.fill")
-    ]
-
-    var body: some View {
-        GeometryReader { proxy in
-            let spacing = max(3, proxy.size.width * 0.018)
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3),
-                spacing: spacing
-            ) {
-                ForEach(Array(tiles.enumerated()), id: \.offset) { index, tile in
-                    DistrictBlock(color: tile.0, symbol: tile.1, index: index)
-                        .aspectRatio(1, contentMode: .fit)
-                }
-            }
-            .padding(spacing * 1.4)
-        }
-        .background(RestaurantTheme.road)
-    }
-}
-
-private struct DistrictBlock: View {
-    let color: Color
-    let symbol: String
-    let index: Int
-
-    var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(RestaurantTheme.canvas)
-            VStack(spacing: 3) {
-                Rectangle()
-                    .fill(color)
-                    .frame(height: 5)
-                Image(systemName: symbol)
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(color)
-                    .frame(maxHeight: .infinity)
-                HStack(spacing: 2) {
-                    ForEach(0..<3, id: \.self) { stripe in
-                        Rectangle()
-                            .fill(stripe.isMultiple(of: 2) ? color : RestaurantTheme.paper)
-                    }
-                }
-                .frame(height: 4)
-            }
-            .padding(4)
-        }
-        .overlay {
-            Rectangle()
-                .stroke(RestaurantTheme.ink.opacity(0.35), lineWidth: 0.75)
-        }
-        .rotationEffect(.degrees(index.isMultiple(of: 2) ? -1 : 1))
     }
 }

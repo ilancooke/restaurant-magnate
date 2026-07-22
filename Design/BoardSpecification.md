@@ -4,6 +4,17 @@ This document is the canonical prototype layout. It preserves the conventional
 40-space economy and position sequence while using original working names and
 restaurant-themed presentation. Card content remains intentionally undefined.
 
+## Board Geometry
+
+- The board is square with an 11-by-11 perimeter.
+- Each side contains 11 positions when its two corners are included: nine
+  non-corner spaces and ten movement steps from one corner to the next.
+- The four corner positions are 0, 10, 20, and 30.
+- Positions advance from 0 right-to-left along the bottom, bottom-to-top along
+  the left, left-to-right along the top, and top-to-bottom along the right.
+- The illustrated center and responsive gameplay shell are presentation only.
+  They do not change space order, economy, legal actions, or state.
+
 ## Global Economy
 
 - Starting cash: $1,500
@@ -99,4 +110,3 @@ upgrades, and flagship. Owning an unimproved complete group doubles base rent.
 - Secret Recipe card instructions
 - Final restaurant names and trademark clearance
 - Final names and artwork for upgrades and flagship locations
-
